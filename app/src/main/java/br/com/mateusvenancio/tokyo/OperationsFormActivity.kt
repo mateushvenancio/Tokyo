@@ -1,16 +1,19 @@
 package br.com.mateusvenancio.tokyo
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import br.com.mateusvenancio.tokyo.core.navigation.Navigation
+import androidx.compose.material3.Surface
+import br.com.mateusvenancio.tokyo.ui.presenter.screens.OperationsFormScreen
 
-class MainActivity : ComponentActivity() {
+class OperationsFormActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
-            Navigation()
+            Surface {
+
+            }
         }
     }
 }

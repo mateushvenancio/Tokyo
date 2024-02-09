@@ -11,9 +11,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,29 +28,55 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import br.com.mateusvenancio.tokyo.core.ServiceLocator
+import br.com.mateusvenancio.tokyo.core.navigation.Screens
 import br.com.mateusvenancio.tokyo.models.Operation
 import br.com.mateusvenancio.tokyo.models.OperationType
+import br.com.mateusvenancio.tokyo.services.OperationsService
 import br.com.mateusvenancio.tokyo.ui.presenter.components.ItemList
 import br.com.mateusvenancio.tokyo.ui.presenter.components.MainCard
 import br.com.mateusvenancio.tokyo.ui.theme.TokyoTheme
+import br.com.mateusvenancio.tokyo.viewmodel.OperationState
 import java.math.BigDecimal
+import java.text.DateFormat
 import java.text.NumberFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(operations: List<Operation>) {
+fun HomeScreen(navController: NavController) {
+    val operations = ServiceLocator.operationsState.operations
+
     TokyoTheme {
-        Scaffold (
+        Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text("All operations", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "All operations",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    actions = {
+                              IconButton(
+                                  onClick = {
+                                      ServiceLocator.operationsState.refreshOperations()
+                                  }
+                              ) {
+                                  Icon(
+                                      Icons.Default.Refresh,
+                                      "Refresh Icon"
+                                  )
+                              }
                     },
                     colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {  }) {
+                FloatingActionButton(onClick = { navController.navigate(Screens.OperationsFormScreen.route) }) {
                     Icon(Icons.Default.Add, "Floating action button")
                 }
             }
@@ -63,25 +91,27 @@ fun HomeScreen(operations: List<Operation>) {
                     MainCard(
                         title = "Monthly Balance",
                         action = {
-                            Icon(Icons.Default.DateRange,"")
+                            Icon(Icons.Default.DateRange, "")
                         },
                         modifier = Modifier.padding(vertical = 16.dp)
                     ) {
-                        val total = BigDecimal("-544.30")
+                        val currentDate = LocalDate.now();
+                        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
+
                         Column(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "February",
+                                currentDate.format(formatter),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                NumberFormat.getCurrencyInstance().format(total.toLong()),
+                                NumberFormat.getCurrencyInstance().format(0),
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (total > BigDecimal.ZERO) {
+                                color = if (BigDecimal("1") > BigDecimal.ZERO) {
                                     Color.Black
                                 } else {
                                     Color.Red
@@ -93,7 +123,7 @@ fun HomeScreen(operations: List<Operation>) {
                 items(operations.count()) {
                     val currentItem = operations[it]
 
-                    val icon = when ( currentItem.type) {
+                    val icon = when (currentItem.type) {
                         OperationType.INCOME -> Icons.Default.KeyboardArrowUp
                         OperationType.OUTCOME -> Icons.Default.KeyboardArrowDown
                     }

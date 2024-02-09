@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 class OperationsService {
-    public fun getAll(): List<Operation> {
+    fun getAll(): List<Operation> {
         return listOf<Operation>(
             Operation(
                 type = OperationType.OUTCOME,
