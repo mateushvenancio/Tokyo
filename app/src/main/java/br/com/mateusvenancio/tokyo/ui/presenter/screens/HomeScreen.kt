@@ -47,7 +47,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val operations = ServiceLocator.operationsState.operations
+    val operationsState = ServiceLocator.operationsState
 
     TokyoTheme {
         Scaffold(
@@ -109,7 +109,9 @@ fun HomeScreen(navController: NavController) {
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                NumberFormat.getCurrencyInstance().format(0),
+                                NumberFormat.getCurrencyInstance().format(
+                                    operationsState.total
+                                ),
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (BigDecimal("1") > BigDecimal.ZERO) {
                                     Color.Black
@@ -120,8 +122,8 @@ fun HomeScreen(navController: NavController) {
                         }
                     }
                 }
-                items(operations.count()) {
-                    val currentItem = operations[it]
+                items(operationsState.operations.count()) {
+                    val currentItem = operationsState.operations[it]
 
                     val icon = when (currentItem.type) {
                         OperationType.INCOME -> Icons.Default.KeyboardArrowUp
@@ -134,12 +136,16 @@ fun HomeScreen(navController: NavController) {
                     val formattedValue = NumberFormat.getCurrencyInstance().format(
                         currentItem.value
                     )
+                    val formattedDate = currentItem.date.format(
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                    )
 
                     ItemList(
                         icon = icon,
                         iconBackgroundColor = iconColor,
                         title = currentItem.title,
                         trailing = formattedValue,
+                        subtitle = formattedDate,
                     )
                 }
             }

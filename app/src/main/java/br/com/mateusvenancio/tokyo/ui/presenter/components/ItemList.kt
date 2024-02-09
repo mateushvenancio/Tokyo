@@ -62,7 +62,7 @@ fun ItemList(
                         .padding(horizontal = 8.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(title)
+                    Text(title, maxLines = 2)
                     if (subtitle != null) Text(subtitle,
                         style = TextStyle(
                             fontSize = 14.sp,
