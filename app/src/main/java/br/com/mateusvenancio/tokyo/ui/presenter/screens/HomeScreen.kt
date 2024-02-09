@@ -1,5 +1,6 @@
 package br.com.mateusvenancio.tokyo.ui.presenter.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,9 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -21,7 +25,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,23 +36,23 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import br.com.mateusvenancio.tokyo.core.ServiceLocator
 import br.com.mateusvenancio.tokyo.core.navigation.Screens
-import br.com.mateusvenancio.tokyo.models.Operation
 import br.com.mateusvenancio.tokyo.models.OperationType
-import br.com.mateusvenancio.tokyo.services.OperationsService
 import br.com.mateusvenancio.tokyo.ui.presenter.components.ItemList
 import br.com.mateusvenancio.tokyo.ui.presenter.components.MainCard
 import br.com.mateusvenancio.tokyo.ui.theme.TokyoTheme
-import br.com.mateusvenancio.tokyo.viewmodel.OperationState
-import java.math.BigDecimal
-import java.text.DateFormat
 import java.text.NumberFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     val operationsState = ServiceLocator.operationsState
+
+    val datePickerState = rememberDatePickerState()
+    var showDatePicker by remember { mutableStateOf(false) }
 
     TokyoTheme {
         Scaffold(
@@ -61,16 +66,16 @@ fun HomeScreen(navController: NavController) {
                         )
                     },
                     actions = {
-                              IconButton(
-                                  onClick = {
-                                      ServiceLocator.operationsState.refreshOperations()
-                                  }
-                              ) {
-                                  Icon(
-                                      Icons.Default.Refresh,
-                                      "Refresh Icon"
-                                  )
-                              }
+                        IconButton(
+                            onClick = {
+                                ServiceLocator.operationsState.refreshOperations()
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                "Refresh Icon"
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
                 )
@@ -81,6 +86,30 @@ fun HomeScreen(navController: NavController) {
                 }
             }
         ) { padding ->
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                datePickerState
+                                    .selectedDateMillis?.let { millis ->
+                                        operationsState.changeDate(
+                                            Instant.ofEpochMilli(millis)
+                                                .atZone(ZoneId.systemDefault())
+                                                .toLocalDate()
+                                        )
+                                    }
+                                showDatePicker = false
+                            }
+                        ) {
+                            Text(text = "Escolher data")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -88,38 +117,11 @@ fun HomeScreen(navController: NavController) {
                     .padding(horizontal = 12.dp)
             ) {
                 item {
-                    MainCard(
-                        title = "Monthly Balance",
-                        action = {
-                            Icon(Icons.Default.DateRange, "")
-                        },
-                        modifier = Modifier.padding(vertical = 16.dp)
+                    CurrentHomeCard(
+                        currentDate = operationsState.selectedDate,
+                        total = operationsState.total
                     ) {
-                        val currentDate = LocalDate.now();
-                        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
-
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                currentDate.format(formatter),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                NumberFormat.getCurrencyInstance().format(
-                                    operationsState.total
-                                ),
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (BigDecimal("1") > BigDecimal.ZERO) {
-                                    Color.Black
-                                } else {
-                                    Color.Red
-                                }
-                            )
-                        }
+                        showDatePicker = true
                     }
                 }
                 items(operationsState.operations.count()) {
@@ -149,6 +151,42 @@ fun HomeScreen(navController: NavController) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CurrentHomeCard(currentDate: LocalDate, total: Float, onSelect: () -> Unit) {
+    MainCard(
+        title = "Monthly Balance",
+        action = {
+            Icon(Icons.Default.DateRange, "")
+        },
+        modifier = Modifier.padding(vertical = 16.dp).clickable {
+            onSelect()
+        }
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                currentDate.format(
+                    DateTimeFormatter.ofPattern("MMMM yyyy")
+                ),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                NumberFormat.getCurrencyInstance().format(total),
+                fontWeight = FontWeight.SemiBold,
+                color = if (total > 0) {
+                    Color.Black
+                } else {
+                    Color.Red
+                }
+            )
         }
     }
 }
