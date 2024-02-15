@@ -15,26 +15,44 @@ class OperationState(
 
     var operations by mutableStateOf<List<Operation>>(emptyList())
         private set
-    var selectedDate by mutableStateOf(LocalDate.now())
+    var initialDate by mutableStateOf(LocalDate.now())
+        private set
+    var finalDate by mutableStateOf(LocalDate.now())
         private set
     var total by mutableStateOf(0f)
         private set
 
     init {
+        val today = LocalDate.now()
+        initialDate = LocalDate.of(today.year, today.month, 1)
+        finalDate = LocalDate.of(today.year, today.month, today.dayOfMonth)
         refreshOperations()
     }
 
-    fun changeDate(newDate: LocalDate) {
-        selectedDate = newDate
+    fun changeDates(newInitialDate: LocalDate, newFinalDate: LocalDate) {
+        initialDate = newInitialDate
+        finalDate = newFinalDate
         refreshOperations()
     }
+
+//    fun changeInitialDate(newDate: LocalDate) {
+//        if (newDate.isBefore(finalDate)) {
+//            initialDate = newDate
+//            refreshOperations()
+//        }
+//    }
+//
+//    fun changeFinalDate(newDate: LocalDate) {
+//        if (newDate.isAfter(initialDate)) {
+//            finalDate = newDate
+//            refreshOperations()
+//        }
+//    }
 
     fun refreshOperations() {
         operations = emptyList()
         operations = operationService.getAll().filter {
-            val sameMonth = it.date.month == selectedDate.month
-            val sameYear = it.date.year == selectedDate.year
-            return@filter sameMonth && sameYear
+            return@filter it.date.isAfter(initialDate) && (it.date.isEqual(finalDate) ||  it.date.isBefore(finalDate))
         }
         total = operations.sumOf { it.value.toDouble() }.toFloat()
     }
